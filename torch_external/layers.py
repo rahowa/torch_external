@@ -143,5 +143,143 @@ class AttentionGates(nn.Module):
         return output
 
 
+class InceptionStem(nn.Module):
 
-    
+    def __init__(self, input_channels):
+        super().__init__()
+        self.inp = input_channels
+        self.conv_inp = nn.Sequential(
+            nn.Conv2d(self.inp, 32,  kernel_size=3, stride=2, padding=0),
+            nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=0),
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)   
+        )
+
+        self.pool_before_concat_1 = nn.MaxPool2d(3, 2, padding=0)
+        self.conv_before_concat_1 = nn.Conv2d(64, 96, kernel_size=3,
+                                              stride=2, padding=0)
+
+        self.conv_after_concat_1 = nn.Sequential(
+            nn.Conv2d(96 + 64, 64, kernel_size=1, stride=1, padding=0),
+            nn.Conv2d(64, 64, kernel_size=(7, 1), stride=1, padding=(5, 0)),
+            nn.Conv2d(64, 64, kernel_size=(1, 7), stride=1, padding=(0, 5)),
+            nn.Conv2d(64, 96, kernel_size=3, stride=1, padding=0)
+        )
+        self.conv_after_concat_2 = nn.Sequential(
+            nn.Conv2d(160, 64, kernel_size=1, stride=1, padding=0),
+            nn.Conv2d(64, 96, kernel_size=3, stride=1, padding=0)
+        )
+
+        self.pool_before_concat_2 = nn.MaxPool2d(3, 2, padding=0)
+        self.conv_before_concat_2 = nn.Conv2d(96 + 96, 192, kernel_size=3,
+                                              stride=1, padding=0)
+
+    def forward(self, x):
+        x = self.conv_inp(x)
+        x_left = self.pool_before_concat_1(x)
+        x_right = self.conv_before_concat_1(x)
+        x = torch.cat([x_left, x_right], dim=1)
+
+        x_left = self.conv_after_concat_2(x)
+        x_right = self.conv_after_concat_1(x)
+        x = torch.cat([x_left, x_right], dim=1)
+
+        x_left = self.pool_before_concat_2(x)
+        x_right = self.conv_before_concat_2(x)
+        x = torch.cat([x_left, x_right], dim=1)
+        return x
+
+
+class InceptionA(nn.Module):
+    def __init__(self, input_channels=384):
+        super().__init__()
+        self.inp = input_channels
+
+        self.branch_0 = nn.Sequential(
+            nn.AvgPool2d(2, stride=1),
+            nn.Conv2d(self.inp, 96, kernel_size=1, stride=1, padding=0)
+        )
+        self.branch_1 = nn.Conv2d(self.inp, 96, kernel_size=1, stride=1, padding=0)
+        self.branch_2 = nn.Sequential(
+            nn.Conv2d(self.inp, 64, kernel_size=1, stride=1, padding=0),
+            nn.Conv2d(64, 96, kernel_size=3, stride=1, padding=1)
+        )
+        self.branch_3 = nn.Sequential(
+            nn.Conv2d(self.inp, 64, kernel_size=1, stride=1, padding=0),
+            nn.Conv2d(64, 96, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(96, 96, kernel_size=3, stride=1, padding=1)
+        )
+
+    def forward(self, x):
+        x = torch.cat([
+            self.branch_0(x),
+            self.branch_1(x),
+            self.branch_2(x),
+            self.branch_3(x),
+        ], dim=1)
+        return x
+
+
+class InceptionB(nn.Module):
+    def __init__(self, input_channels=384):
+        super().__init__()
+        self.inp = input_channels
+
+        self.branch_0 = nn.Sequential(
+            nn.AvgPool2d(2),
+            nn.Conv2d(self.inp, 128, kernel_size=1, stride=1, padding=0)
+        )
+        self.branch_1 = nn.Conv2d(self.inp, 384, kernel_size=1, stride=1, padding=0)
+        self.branch_2 = nn.Sequential(
+            nn.Conv2d(self.inp, 192, kernel_size=1, stride=1, padding=0),
+            nn.Conv2d(192, 224, kernel_size=(7, 1), stride=1, padding=(5, 0)),
+            nn.Conv2d(224, 256, kernel_size=(1, 7), stride=1, padding=(0, 5)),
+        )
+        self.branch_3 = nn.Sequential(
+            nn.Conv2d(self.inp, 192, kernel_size=1, stride=1, padding=0),
+            nn.Conv2d(192, 192, kernel_size=(1, 7), stride=1, padding=(0, 5)),
+            nn.Conv2d(192, 224, kernel_size=(7, 1), stride=1, padding=(5, 0)),
+            nn.Conv2d(224, 224, kernel_size=(1, 7), stride=1, padding=(0, 5)),
+            nn.Conv2d(224, 256, kernel_size=(7, 1), stride=1, padding=(5, 0)),
+        )
+
+    def forward(self, x):
+        x = torch.cat([
+            self.branch_0(x),
+            self.branch_1(x),
+            self.branch_2(x),
+            self.branch_3(x),
+        ], dim=1)
+        return x
+
+
+class InceptionC(nn.Module):
+    def __init__(self, input_channels):
+        super().__init__()
+        self.inp = input_channels
+        self.branch_0 = nn.Sequential(
+            nn.AvgPool2d(2),
+            nn.Conv2d(self.inp, 256, kernel_size=1, stride=1, padding=0)
+        )
+        self.branch_1 = nn.Conv2d(self.inp, 256, kernel_size=1, stride=1, padding=0)
+        self.branch_2_inp = nn.Conv2d(self.inp, 384, kernel_size=1, stride=1, padding=0)
+        self.branch_2_left = nn.Conv2d(384, 256, kernel_size=(1, 3), stride=1, padding=(0, 1))
+        self.branch_2_right = nn.Conv2d(384, 256, kernel_size=(3, 1), stride=1, padding=(1, 0))
+        self.branch_3_inp = nn.Sequential(
+            nn.Conv2d(self.inp, 384, kernel_size=1, stride=1, padding=0),
+            nn.Conv2d(384, 448, kernel_size=(1, 3), stride=1, padding=(0, 1)),
+            nn.Conv2d(448, 512, kernel_size=(3, 1), stride=1, padding=(1, 0)),
+        )
+        self.branch_3_left = nn.Conv2d(512, 256, kernel_size=(3, 1), stride=1, padding=(1, 0))
+        self.branch_3_right = nn.Conv2d(512, 256, kernel_size=(1, 3), stride=1, padding=(0, 1))
+
+    def forward(self, x):
+        x_0 = self.branch_0(x)
+        x_1 = self.branch_1(x)
+        x_2_inp = self.branch_2_inp(x)
+        x_2_left = self.branch_2_left(x_2_inp)
+        x_2_right = self.branch_2_right(x_2_inp)
+        x_3_inp = self.branch_3_inp(x)
+        x_3_left = self.branch_3_left(x_3_inp)
+        x_3_right = self.branch_3_right(x_3_inp)
+        x = torch.cat([x_0, x_1, x_2_left, x_2_right, x_3_left, x_3_right], dim=1)
+        return x
