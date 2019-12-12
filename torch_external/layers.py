@@ -7,7 +7,7 @@ __all__ = ["FilterResponseNorm1D", "FilterResponseNorm2D",
            "FilterResponseNorm3D", "Squash", "Flatten", "AttentionGates"]
 
 
-class FilterResponseNormBase(nn.Module):
+class FilterResponseNorm1D(nn.Module):
     def __init__(self, channels, eps=1e-6):
         super().__init__()
         self.eps = eps
@@ -22,12 +22,7 @@ class FilterResponseNormBase(nn.Module):
         return torch.max([self.gamma * x + self.beta, self.tau])
 
 
-class FilterResponseNorm1D(FilterResponseNormBase):
-    def __init__(self, channels, eps=1e-6):
-        super().__init__()
-
-
-class FilterResponseNorm2D(FilterResponseNormBase):
+class FilterResponseNorm2D(nn.Module):
     def __init__(self, channels, eps=1e-6):
         super().__init__()
         self.eps = eps
@@ -42,7 +37,7 @@ class FilterResponseNorm2D(FilterResponseNormBase):
         return torch.max([self.gamma * x + self.beta, self.tau])
 
 
-class FilterResponseNorm3D(FilterResponseNormBase):
+class FilterResponseNorm3D(nn.Module):
     def __init__(self, channels, eps=1e-6):
         super().__init__()
         self.eps = eps 
@@ -57,7 +52,7 @@ class FilterResponseNorm3D(FilterResponseNormBase):
         return torch.max([self.gamma * x + self.beta, self.tau])
 
 
-class Squash(nn.Module):
+class Squash1D(nn.Module):
     """
     BSxSEQLENxFEATURES -> BSxFEATURES
     """
@@ -146,3 +141,7 @@ class AttentionGates(nn.Module):
     def forward(self, x, g):
         output = self._concatenation(x, g)
         return output
+
+
+
+    
