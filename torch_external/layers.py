@@ -3,10 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-__all__ = ["FilterResponseNorm1D", "FilterResponseNorm2D",
-           "FilterResponseNorm3D", "Squash", "Flatten", "AttentionGates"]
-
-
 class FilterResponseNorm1D(nn.Module):
     def __init__(self, channels, eps=1e-6):
         super().__init__()
@@ -59,7 +55,7 @@ class Squash1D(nn.Module):
     def __init__(self, method):
         super().__init__()
         self.method = method
-        
+   
     def forward(self, x):
         if self.method == "last":
             return x[:, -1, :].view(-1, x.size(-1))
